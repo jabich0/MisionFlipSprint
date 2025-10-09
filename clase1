@@ -1,4 +1,4 @@
-Rol 1: Arquitecto de Sistemas y Edge Computing
+Rol 1: Arquitecto de Sistemas y Edge Computing - Franco Javi Pino
 Tareas principales:
 
 Diseñar el diagrama de arquitectura del sistema completo (Edge → Cloud → Decisión)
@@ -8,7 +8,7 @@ Configurar el broker MQTT y gestionar la conectividad
 Documentar las decisiones arquitectónicas y justificar la elección de tecnologías cloud
 Liderar la implementación de la seguridad por diseño (principios CIA)
 
-Rol 2: Ingeniero de Datos y Backend
+Rol 2: Ingeniero de Datos y Backend - Rafael Rendón
 Tareas principales:
 
 Configurar la ingesta de datos en la nube (API Gateway + Lambda/Cloud Functions)
@@ -18,7 +18,7 @@ Implementar la lógica de negocio con reglas de alerta (temperatura > 8°C, acel
 Configurar el sistema de reintentos y manejo de fallos transitorios
 Evaluar el rendimiento del sistema con métricas como F1-Score, precisión y recall
 
-Rol 3: Analista de Negocio y Visualización
+Rol 3: Analista de Negocio y Visualización - Javier Silos Esteban
 Tareas principales:
 
 Crear el dashboard con los 3 KPIs clave: % de envíos en SLA, Tiempo Medio de Detección, % de Falsos Positivos
