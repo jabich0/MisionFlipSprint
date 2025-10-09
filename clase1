@@ -1,0 +1,29 @@
+Rol 1: Arquitecto de Sistemas y Edge Computing
+Tareas principales:
+
+Diseñar el diagrama de arquitectura del sistema completo (Edge → Cloud → Decisión)
+Desarrollar el simulador IoT que genere datos de telemetría (temperatura, humedad, GPS, acelerómetro)
+Implementar la comunicación MQTT segura con TLS
+Configurar el broker MQTT y gestionar la conectividad
+Documentar las decisiones arquitectónicas y justificar la elección de tecnologías cloud
+Liderar la implementación de la seguridad por diseño (principios CIA)
+
+Rol 2: Ingeniero de Datos y Backend
+Tareas principales:
+
+Configurar la ingesta de datos en la nube (API Gateway + Lambda/Cloud Functions)
+Diseñar y implementar la base de datos PostgreSQL con esquemas optimizados
+Desarrollar el motor de procesamiento en tiempo real para detección de anomalías
+Implementar la lógica de negocio con reglas de alerta (temperatura > 8°C, acelerómetro > 2.5G)
+Configurar el sistema de reintentos y manejo de fallos transitorios
+Evaluar el rendimiento del sistema con métricas como F1-Score, precisión y recall
+
+Rol 3: Analista de Negocio y Visualización
+Tareas principales:
+
+Crear el dashboard con los 3 KPIs clave: % de envíos en SLA, Tiempo Medio de Detección, % de Falsos Positivos
+Implementar el sistema de notificaciones automáticas (Slack/Discord webhooks)
+Configurar herramientas de BI (Looker Studio, Power BI o Grafana)
+Desarrollar las consultas SQL para agregar datos y calcular métricas de negocio
+Gestionar el conjunto de datos etiquetado para evaluación del sistema
+Preparar la demostración final y documentar los resultados
