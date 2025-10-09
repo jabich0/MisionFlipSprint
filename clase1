@@ -1,29 +1,39 @@
-Rol 1: Arquitecto de Sistemas y Edge Computing - Franco Javi Pino
-Tareas principales:
+ROL 1: Especialista en Infraestructura IoT y Edge Computing - Javier Silos Esteban
+Responsabilidades principales:
 
-Diseñar el diagrama de arquitectura del sistema completo (Edge → Cloud → Decisión)
-Desarrollar el simulador IoT que genere datos de telemetría (temperatura, humedad, GPS, acelerómetro)
-Implementar la comunicación MQTT segura con TLS
-Configurar el broker MQTT y gestionar la conectividad
-Documentar las decisiones arquitectónicas y justificar la elección de tecnologías cloud
-Liderar la implementación de la seguridad por diseño (principios CIA)
+Diseñar el simulador IoT que genere datos críticos para transporte farmacéutico:
+Temperatura (rango crítico: 2-8°C para medicamentos refrigerados)
+Humedad relativa (40-60% para estabilidad farmacéutica)
+Coordenadas GPS para trazabilidad de ruta
+Acelerómetro para detectar golpes que puedan dañar viales
+ID de lote farmacéutico y timestamp en UTC
+Implementar comunicación MQTT segura con certificados TLS para proteger datos sensibles
+Configurar el broker MQTT con autenticación y autorización por roles
+Desarrollar la lógica de reconexión automática para garantizar disponibilidad 24/7
+Documentar la arquitectura de sensores y justificar decisiones técnicas
 
-Rol 2: Ingeniero de Datos y Backend - Rafael Rendón
-Tareas principales:
+ROL 2: Ingeniero de Procesamiento de Datos Farmacéuticos - Francisco Javier Pino
+Responsabilidades principales:
 
-Configurar la ingesta de datos en la nube (API Gateway + Lambda/Cloud Functions)
-Diseñar y implementar la base de datos PostgreSQL con esquemas optimizados
-Desarrollar el motor de procesamiento en tiempo real para detección de anomalías
-Implementar la lógica de negocio con reglas de alerta (temperatura > 8°C, acelerómetro > 2.5G)
-Configurar el sistema de reintentos y manejo de fallos transitorios
-Evaluar el rendimiento del sistema con métricas como F1-Score, precisión y recall
+Configurar la ingesta de datos con API Gateway y funciones serverless
+Implementar la base de datos PostgreSQL con esquemas optimizados para datos farmacéuticos
+Desarrollar el motor de detección de anomalías con reglas específicas para medicamentos:
+Temperatura > 8°C durante > 3 eventos consecutivos (rotura cadena de frío)
+Acelerómetro > 2.5G durante > 5 eventos (posible daño por impacto)
+Desviación de ruta superior a 500m del trayecto planificado
+Implementar sistema de reintentos con backoff exponencial para fallos transitorios
+Configurar validación de datos de entrada según estándares farmacéuticos
+Evaluar rendimiento del sistema con métricas F1-Score, precisión y recall
 
-Rol 3: Analista de Negocio y Visualización - Javier Silos Esteban
-Tareas principales:
+ROL 3: Analista de KPIs Farmacéuticos y Compliance - Rafael Rendón
+Responsabilidades principales:
 
-Crear el dashboard con los 3 KPIs clave: % de envíos en SLA, Tiempo Medio de Detección, % de Falsos Positivos
-Implementar el sistema de notificaciones automáticas (Slack/Discord webhooks)
+Crear dashboard con KPIs críticos para compliance farmacéutico:
+% de Envíos en Norma GDP: Porcentaje de envíos que mantuvieron 2-8°C durante todo el transporte
+Tiempo Medio de Detección de Anomalías: MTTD para incidentes críticos de temperatura
+% de Falsos Positivos: Índice de confianza del sistema de alertas
+Implementar sistema de alertas automáticas mediante webhooks a Slack/Discord
 Configurar herramientas de BI (Looker Studio, Power BI o Grafana)
-Desarrollar las consultas SQL para agregar datos y calcular métricas de negocio
-Gestionar el conjunto de datos etiquetado para evaluación del sistema
-Preparar la demostración final y documentar los resultados
+Desarrollar consultas SQL para generar reportes de compliance regulatorio
+Preparar documentación para auditorías de autoridades sanitarias
+Gestionar conjunto de datos etiquetado con casos reales de incidentes farmacéuticos
