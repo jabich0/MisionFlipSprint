@@ -1,0 +1,111 @@
+ Planificación por Semanas
+SEMANA 1: Fundamentos y Edge
+Foco: Simulación IoT + Ingesta básica
+Día 1-2: Setup y Diseño
+
+ Definir stack tecnológico
+ Setup repositorio Git con estructura
+ Diseño de arquitectura detallada
+ Definir esquema de datos (JSON)
+ Configurar entorno cloud (AWS/Azure/GCP)
+
+Día 3-4: Simulador IoT
+
+ Desarrollar simulador de sensores:
+
+Temperatura: 2-8°C (rango farmacéutico)
+GPS: Coordenadas + velocidad
+Acelerómetro: Detección de impactos
+Humedad: 30-70%
+
+
+ Implementar escenarios de incidentes
+ Protocolo de comunicación (MQTT/HTTP)
+
+Día 5-7: Ingesta Cloud
+
+ Setup IoT Hub/Gateway
+ Implementar autenticación de dispositivos
+ Pruebas de conectividad
+ Logging inicial
+
+Entregable: Simulador enviando datos a cloud
+
+SEMANA 2: Procesamiento y Detección
+Foco: Storage + Procesamiento + ML básico
+Día 8-9: Almacenamiento
+
+ Implementar base de datos time-series (InfluxDB/TimescaleDB)
+ Data Lake para datos raw (S3/Blob Storage)
+ Definir política de retención
+ Implementar encriptación en reposo
+
+Día 10-12: Detección de Anomalías
+
+ Reglas basadas en umbrales:
+
+Temperatura > 8°C o < 2°C
+Impacto > umbral G-force
+Desviación de ruta > X km
+
+
+ Modelo ML básico:
+
+Isolation Forest para anomalías
+Entrenar con datos simulados
+Integrar en pipeline
+
+
+
+Día 13-14: Sistema de Alertas
+
+ Engine de reglas de negocio
+ Niveles de severidad (INFO/WARNING/CRITICAL)
+ Integración notificaciones:
+
+Email (SendGrid/SES)
+SMS/WhatsApp (Twilio)
+Webhook para sistemas externos
+
+
+
+Entregable: Sistema detectando y alertando incidentes
+
+SEMANA 3: Visualización y Seguridad
+Foco: Dashboard + Hardening + Presentación
+Día 15-17: Dashboard Operativo
+
+ Frontend con Grafana/Streamlit/React
+ Vistas principales:
+
+Mapa en tiempo real de envíos
+Gráficos de temperatura por envío
+Log de alertas históricas
+KPIs (% envíos sin incidentes)
+
+
+ Autenticación de usuarios
+ Filtros y búsquedas
+
+Día 18-19: Seguridad y Compliance
+
+ Audit de seguridad:
+
+Encriptación end-to-end
+Gestión de secretos (Vault/Key Management)
+RBAC (roles de usuario)
+Logs de auditoría
+
+
+ Cumplimiento GDP (Good Distribution Practice)
+ Documentación de seguridad
+
+Día 20-21: Testing y Documentación
+
+ Pruebas end-to-end
+ Simulación de incidentes múltiples
+ Documentación técnica
+ Video demo (3-5 min)
+ Preparar presentación final
+
+Entregable: Sistema completo + Presentación
