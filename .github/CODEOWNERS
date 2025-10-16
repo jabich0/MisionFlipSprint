@@ -1,0 +1,4 @@
+/edge/         @rol-edge
+/ingest_api/   @rol-ingesta
+/flows/        @rol-flujos
+/analytics/    @rol-kpis

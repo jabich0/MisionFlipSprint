@@ -1,0 +1,25 @@
+{
+  "greenDeliveryFlow": [
+    {
+      "id": "mqtt-in",
+      "type": "mqtt in",
+      "name": "MQTT Telemetry IN",
+      "topic": "greendelivery/trackers/telemetry",
+      "broker": "broker1"
+    },
+    {
+      "id": "validate",
+      "type": "function",
+      "name": "Validate JSON",
+      "func": "let ok=true; try{JSON.parse(msg.payload);}catch(e){ok=false}\nif(!ok){return null;}\nreturn msg;"
+    },
+    {
+      "id": "http-post",
+      "type": "http request",
+      "name": "POST /ingest",
+      "method": "POST",
+      "ret": "obj",
+      "url": "http://ingest_api:8000/ingest"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+-- Coloca aquí las consultas de KPIs (SLA, MTTD, %FP)

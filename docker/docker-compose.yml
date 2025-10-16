@@ -1,0 +1,58 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: gd_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../db/ddl.sql:/docker-entrypoint-initdb.d/01_ddl.sql:ro
+
+  adminer:
+    image: adminer
+    container_name: gd_adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: gd_mosquitto
+    ports:
+      - "1883:1883"
+    volumes:
+      - ../docker/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+
+  nodered:
+    image: nodered/node-red:latest
+    container_name: gd_nodered
+    ports:
+      - "1880:1880"
+    volumes:
+      - ../flows:/data
+    depends_on:
+      - mosquitto
+
+  ingest_api:
+    build:
+      context: ../ingest_api
+    container_name: gd_ingest_api
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      WEBHOOK_URL: ${WEBHOOK_URL}
+    ports:
+      - "${API_PORT}:8000"
+    depends_on:
+      - postgres
+
+volumes:
+  pgdata:
