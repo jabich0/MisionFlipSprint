@@ -1,1 +1,73 @@
+1. Condiciones ambientales
 
+Temperatura:
+Debe mantenerse dentro del rango autorizado por el fabricante (por lo general, 15–25 °C o 2–8 °C para productos refrigerados).
+Métricas:
+
+% de trayectos con temperatura dentro del rango.
+
+Tiempo total fuera del rango permitido (minutos o %).
+
+Máxima y mínima registrada por envío.
+
+Humedad:
+Debe controlarse cuando pueda afectar la estabilidad del producto.
+Métrica: % de trayectos con humedad fuera de rango.
+
+
+2. Integridad y trazabilidad
+
+Cada envío debe estar identificado, documentado y registrado desde el almacén hasta el destino.
+Métricas:
+
+% de lotes trazables sin incidencias.
+
+Número de incidencias de pérdida o rotura por cada 1.000 envíos.
+
+Tiempo medio de localización de un lote (trazabilidad inversa).
+
+
+3. Plazos y cumplimiento de entrega
+
+El medicamento debe llegar sin demoras que comprometan su calidad o disponibilidad.
+Métricas:
+
+% de entregas dentro del plazo acordado.
+
+Tiempo medio de entrega.
+
+% de entregas urgentes cumplidas.
+
+
+4. Condiciones del vehículo y control operativo
+
+Los vehículos deben estar validados, limpios y con control de temperatura cuando proceda.
+Métricas:
+
+% de vehículos con validación vigente.
+
+Número de mantenimientos preventivos realizados / programados.
+
+% de vehículos con registro continuo de temperatura.
+
+
+5. Formación y procedimientos
+
+El personal debe estar formado en Buenas Prácticas de Distribución (BPD).
+Métricas:
+
+% de conductores con formación actualizada.
+
+Nº de desviaciones por error humano detectadas en inspecciones.
+
+
+6. Gestión de incidencias y devoluciones
+
+Toda desviación (por temperatura, rotura, retraso o pérdida) debe registrarse y analizarse.
+Métricas:
+
+Nº de incidencias por 1.000 envíos.
+
+Tiempo medio de resolución de incidencias.
+
+% de productos devueltos por no conformidad.
