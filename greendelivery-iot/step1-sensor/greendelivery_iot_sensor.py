@@ -251,6 +251,13 @@ class GreenDeliveryPharmaIoTSensor:
             print(f"   {emoji} ALERTA {alerta['severidad']}: {alerta['mensaje']}")
             if alerta.get('impacto'):
                 print(f"      🔍 Impacto: {alerta['impacto']}")
+                
+            if mqtt_client:
+            try:
+                mqtt_client.publish(MQTT_TOPIC, json.dumps(datos))
+                print(f"📤 Datos publicados en MQTT ({MQTT_TOPIC})")
+            except Exception as e:
+                print(f"⚠️ Error publicando en MQTT: {e}")
         
         return exito
     
