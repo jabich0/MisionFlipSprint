@@ -27,6 +27,23 @@ except ImportError:
     import urllib.parse
     USAR_REQUESTS = False
     print("⚠️  Usando urllib (instala 'requests' para mejor experiencia)")
+    
+import paho.mqtt.client as mqtt
+
+# Configuración MQTT opcional (si el broker está disponible)
+MQTT_HOST = os.getenv("MQTT_HOST", None)
+MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
+MQTT_TOPIC = os.getenv("MQTT_TOPIC", "sensors/temperature")
+
+mqtt_client = None
+if MQTT_HOST:
+    try:
+        mqtt_client = mqtt.Client()
+        mqtt_client.connect(MQTT_HOST, MQTT_PORT, 60)
+        print(f"📡 Conectado a broker MQTT: {MQTT_HOST}:{MQTT_PORT}")
+    except Exception as e:
+        print(f"⚠️ No se pudo conectar al broker MQTT: {e}")
+        mqtt_client = None
 
 class GreenDeliveryPharmaIoTSensor:
     """
