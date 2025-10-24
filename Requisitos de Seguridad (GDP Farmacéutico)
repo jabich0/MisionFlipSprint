@@ -1,0 +1,29 @@
+1.Autenticación y Autorización
+
+Certificados X.509 para dispositivos IoT
+OAuth 2.0 / JWT para usuarios
+RBAC: Operador, Supervisor, Admin
+
+2.Encriptación
+
+TLS 1.3 en tránsito
+AES-256 en reposo
+Gestión segura de claves
+
+3.Trazabilidad
+
+Logs inmutables de todos los eventos
+Cadena de custodia digital
+Timestamps firmados
+
+4.Integridad de Datos
+
+Checksums en telemetría
+Detección de manipulación
+Validación de datos de entrada
+
+5.Compliance
+
+GDPR para datos de conductores
+GDP para productos farmacéuticos
+Documentación de auditoría

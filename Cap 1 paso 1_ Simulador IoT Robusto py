@@ -1,0 +1,389 @@
+#!/usr/bin/env python3
+"""
+Simulador IoT para Transporte Farmacéutico
+Genera telemetría realista con incidentes simulados
+"""
+
+import os
+import json
+import time
+import random
+import logging
+from datetime import datetime, timezone
+from typing import Dict, Any, Optional
+import paho.mqtt.client as mqtt
+from dataclasses import dataclass, asdict
+from enum import Enum
+
+# Configuración de logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+
+class CargoType(Enum):
+    """Tipos de carga farmacéutica"""
+    VACCINES = "vaccines"          # 2-8°C
+    INSULIN = "insulin"            # 2-8°C
+    BIOLOGICS = "biologics"        # 2-8°C
+    FROZEN = "frozen"              # -20°C
+    AMBIENT = "ambient"            # 15-25°C
+
+
+class IncidentType(Enum):
+    """Tipos de incidentes"""
+    TEMP_EXCURSION_HIGH = "temp_excursion_high"
+    TEMP_EXCURSION_LOW = "temp_excursion_low"
+    SHOCK_IMPACT = "shock_impact"
+    DOOR_OPENING = "door_opening"
+    POWER_FAILURE = "power_failure"
+    GPS_DEVIATION = "gps_deviation"
+
+
+@dataclass
+class SensorReading:
+    """Lectura completa de sensores"""
+    truck_id: str
+    timestamp: str
+    temperature: float
+    humidity: float
+    force_g: float
+    latitude: float
+    longitude: float
+    battery_level: int
+    door_status: str
+    cargo_type: str
+    package_id: str
+    sensor_status: str
+    incident_detected: Optional[str] = None
+
+
+class PharmaColdSimulator:
+    """Simulador de dispositivo IoT para transporte farmacéutico"""
+    
+    # Rangos de temperatura según tipo de carga (GDP)
+    TEMP_RANGES = {
+        CargoType.VACCINES: (2.0, 8.0),
+        CargoType.INSULIN: (2.0, 8.0),
+        CargoType.BIOLOGICS: (2.0, 8.0),
+        CargoType.FROZEN: (-25.0, -15.0),
+        CargoType.AMBIENT: (15.0, 25.0)
+    }
+    
+    def __init__(self):
+        # Configuración desde variables de entorno
+        self.truck_id = os.getenv('TRUCK_ID', 'TRK-001')
+        self.mqtt_broker = os.getenv('MQTT_BROKER', 'localhost')
+        self.mqtt_port = int(os.getenv('MQTT_PORT', 1883))
+        self.mqtt_topic = os.getenv('MQTT_TOPIC', 'pharmacold/trucks/telemetry')
+        self.publish_interval = int(os.getenv('PUBLISH_INTERVAL', 2))
+        self.cargo_type = CargoType(os.getenv('CARGO_TYPE', 'vaccines'))
+        self.simulate_incidents = os.getenv('SIMULATE_INCIDENTS', 'true').lower() == 'true'
+        self.incident_probability = float(os.getenv('INCIDENT_PROBABILITY', 0.05))
+        
+        # Estado del simulador
+        self.is_connected = False
+        self.message_count = 0
+        self.incident_active = False
+        self.incident_duration = 0
+        
+        # Posición GPS (ruta Madrid → Barcelona)
+        self.base_lat = 40.4168
+        self.base_lon = -3.7038
+        self.gps_offset = 0.0
+        
+        # Estado de batería
+        self.battery = 100
+        
+        # Cliente MQTT
+        self.client = mqtt.Client(client_id=f"{self.truck_id}_simulator")
+        self.client.on_connect = self.on_connect
+        self.client.on_disconnect = self.on_disconnect
+        self.client.on_publish = self.on_publish
+        
+        # Configurar LWT (Last Will and Testament)
+        lwt_payload = json.dumps({
+            "truck_id": self.truck_id,
+            "status": "offline",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+        self.client.will_set(
+            f"{self.mqtt_topic}/status",
+            payload=lwt_payload,
+            qos=1,
+            retain=True
+        )
+        
+        logger.info(f"Simulador inicializado: {self.truck_id} - Carga: {self.cargo_type.value}")
+    
+    def on_connect(self, client, userdata, flags, rc):
+        """Callback cuando se conecta al broker MQTT"""
+        if rc == 0:
+            self.is_connected = True
+            logger.info(f" Conectado al broker MQTT: {self.mqtt_broker}:{self.mqtt_port}")
+            
+            # Publicar mensaje de estado online
+            status_msg = {
+                "truck_id": self.truck_id,
+                "status": "online",
+                "cargo_type": self.cargo_type.value,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+            self.client.publish(
+                f"{self.mqtt_topic}/status",
+                json.dumps(status_msg),
+                qos=1,
+                retain=True
+            )
+        else:
+            logger.error(f" Error de conexión MQTT. Código: {rc}")
+            self.is_connected = False
+    
+    def on_disconnect(self, client, userdata, rc):
+        """Callback cuando se desconecta del broker"""
+        self.is_connected = False
+        if rc != 0:
+            logger.warning(f"  Desconexión inesperada. Código: {rc}. Reintentando...")
+        else:
+            logger.info(" Desconectado del broker MQTT")
+    
+    def on_publish(self, client, userdata, mid):
+        """Callback cuando se publica un mensaje"""
+        self.message_count += 1
+        if self.message_count % 10 == 0:
+            logger.info(f" {self.message_count} mensajes publicados")
+    
+    def connect(self):
+        """Conectar al broker MQTT con reintentos"""
+        max_retries = 5
+        retry_delay = 5
+        
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"Intentando conectar al broker MQTT... (intento {attempt + 1}/{max_retries})")
+                self.client.connect(self.mqtt_broker, self.mqtt_port, keepalive=60)
+                self.client.loop_start()
+                
+                # Esperar a que se establezca la conexión
+                timeout = 10
+                start_time = time.time()
+                while not self.is_connected and (time.time() - start_time) < timeout:
+                    time.sleep(0.5)
+                
+                if self.is_connected:
+                    return True
+                    
+            except Exception as e:
+                logger.error(f" Error al conectar: {e}")
+            
+            if attempt < max_retries - 1:
+                logger.info(f" Reintentando en {retry_delay} segundos...")
+                time.sleep(retry_delay)
+        
+        logger.error(" No se pudo conectar al broker MQTT después de varios intentos")
+        return False
+    
+    def generate_temperature(self) -> float:
+        """Generar temperatura realista según tipo de carga"""
+        temp_range = self.TEMP_RANGES[self.cargo_type]
+        base_temp = (temp_range[0] + temp_range[1]) / 2
+        
+        # Temperatura normal con pequeña variación
+        if not self.incident_active:
+            variation = random.uniform(-0.5, 0.5)
+            temp = base_temp + variation
+        else:
+            # Simular excursión de temperatura
+            if self.incident_duration < 10:
+                # Aumento gradual
+                temp = base_temp + (self.incident_duration * 0.5)
+            else:
+                # Temperatura crítica
+                temp = temp_range[1] + random.uniform(1.0, 3.0)
+        
+        return round(temp, 2)
+    
+    def generate_force_g(self) -> float:
+        """Generar lectura de acelerómetro"""
+        if not self.incident_active:
+            # Vibración normal del vehículo
+            return round(random.uniform(0.1, 1.0), 2)
+        else:
+            # Simular impacto fuerte
+            if random.random() < 0.3:
+                return round(random.uniform(3.0, 6.0), 2)
+            return round(random.uniform(1.5, 2.5), 2)
+    
+    def generate_gps(self) -> tuple:
+        """Generar coordenadas GPS (simulando ruta)"""
+        # Simular movimiento hacia Barcelona
+        self.gps_offset += 0.001  # Incremento gradual
+        
+        lat = self.base_lat + (self.gps_offset * 0.5)
+        lon = self.base_lon + self.gps_offset
+        
+        # Pequeña variación aleatoria
+        lat += random.uniform(-0.0001, 0.0001)
+        lon += random.uniform(-0.0001, 0.0001)
+        
+        return round(lat, 6), round(lon, 6)
+    
+    def should_trigger_incident(self) -> bool:
+        """Decidir si se debe simular un incidente"""
+        if self.simulate_incidents and not self.incident_active:
+            return random.random() < self.incident_probability
+        return False
+    
+    def update_battery(self):
+        """Actualizar nivel de batería"""
+        # Descarga gradual (1% cada ~50 lecturas = ~100 segundos)
+        if self.message_count % 50 == 0 and self.battery > 5:
+            self.battery -= 1
+            if self.battery <= 20:
+                logger.warning(f"  Batería baja: {self.battery}%")
+    
+    def generate_reading(self) -> SensorReading:
+        """Generar una lectura completa de sensores"""
+        
+        # Decidir si activar incidente
+        if self.should_trigger_incident():
+            self.incident_active = True
+            self.incident_duration = 0
+            logger.warning(f" INCIDENTE SIMULADO activado en {self.truck_id}")
+        
+        # Incrementar duración del incidente
+        if self.incident_active:
+            self.incident_duration += 1
+            # Desactivar después de 30 lecturas (60 segundos)
+            if self.incident_duration > 30:
+                self.incident_active = False
+                self.incident_duration = 0
+                logger.info(f" Incidente resuelto en {self.truck_id}")
+        
+        # Generar datos
+        temp = self.generate_temperature()
+        force_g = self.generate_force_g()
+        lat, lon = self.generate_gps()
+        
+        # Actualizar batería
+        self.update_battery()
+        
+        # Detectar tipo de incidente
+        incident = None
+        temp_range = self.TEMP_RANGES[self.cargo_type]
+        if temp > temp_range[1]:
+            incident = IncidentType.TEMP_EXCURSION_HIGH.value
+        elif temp < temp_range[0]:
+            incident = IncidentType.TEMP_EXCURSION_LOW.value
+        elif force_g > 3.0:
+            incident = IncidentType.SHOCK_IMPACT.value
+        
+        reading = SensorReading(
+            truck_id=self.truck_id,
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            temperature=temp,
+            humidity=round(random.uniform(50, 75), 1),
+            force_g=force_g,
+            latitude=lat,
+            longitude=lon,
+            battery_level=self.battery,
+            door_status="closed" if random.random() > 0.01 else "open",
+            cargo_type=self.cargo_type.value,
+            package_id=f"PKG-{self.truck_id}-{random.randint(1000, 9999)}",
+            sensor_status="ok" if self.battery > 10 else "low_battery",
+            incident_detected=incident
+        )
+        
+        return reading
+    
+    def publish_reading(self, reading: SensorReading):
+        """Publicar lectura al broker MQTT"""
+        if not self.is_connected:
+            logger.error(" No conectado al broker. No se puede publicar.")
+            return False
+        
+        try:
+            payload = json.dumps(asdict(reading), indent=None)
+            result = self.client.publish(
+                self.mqtt_topic,
+                payload,
+                qos=1
+            )
+            
+            # Verificar si la publicación fue exitosa
+            if result.rc == mqtt.MQTT_ERR_SUCCESS:
+                if reading.incident_detected:
+                    logger.warning(f" Publicado con INCIDENTE: {reading.incident_detected}")
+                return True
+            else:
+                logger.error(f" Error al publicar: {result.rc}")
+                return False
+                
+        except Exception as e:
+            logger.error(f" Excepción al publicar: {e}")
+            return False
+    
+    def run(self):
+        """Bucle principal del simulador"""
+        logger.info(f" Iniciando simulador {self.truck_id}...")
+        
+        # Conectar al broker
+        if not self.connect():
+            logger.error(" No se pudo iniciar el simulador")
+            return
+        
+        logger.info(f" Simulador en ejecución. Publicando cada {self.publish_interval}s")
+        logger.info(f"📊 Tipo de carga: {self.cargo_type.value}")
+        logger.info(f"🌡️  Rango permitido: {self.TEMP_RANGES[self.cargo_type]}°C")
+        
+        try:
+            while True:
+                # Verificar conexión
+                if not self.is_connected:
+                    logger.warning("  Conexión perdida. Reconectando...")
+                    self.connect()
+                    continue
+                
+                # Generar y publicar lectura
+                reading = self.generate_reading()
+                self.publish_reading(reading)
+                
+                # Esperar intervalo
+                time.sleep(self.publish_interval)
+                
+        except KeyboardInterrupt:
+            logger.info("\n Simulador detenido por el usuario")
+        except Exception as e:
+            logger.error(f" Error fatal: {e}")
+        finally:
+            self.cleanup()
+    
+    def cleanup(self):
+        """Limpieza antes de cerrar"""
+        logger.info("🧹 Limpiando recursos...")
+        
+        # Publicar estado offline
+        if self.is_connected:
+            status_msg = {
+                "truck_id": self.truck_id,
+                "status": "offline",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "total_messages": self.message_count
+            }
+            self.client.publish(
+                f"{self.mqtt_topic}/status",
+                json.dumps(status_msg),
+                qos=1,
+                retain=True
+            )
+        
+        self.client.loop_stop()
+        self.client.disconnect()
+        logger.info("Simulador cerrado correctamente")
+
+
+if __name__ == "__main__":
+    simulator = PharmaColdSimulator()
+    simulator.run()

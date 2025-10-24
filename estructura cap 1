@@ -1,0 +1,42 @@
+pharmacold-iot/
+├── docker-compose.yml           # Orquestación de todos los servicios
+├── .env.example                 # Variables de entorno
+├── README.md
+│
+├── simulator/                   # PASO 1: IoT Device Simulator
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   ├── simulator.py            # Simulador principal
+│   ├── sensor_profiles.py      # Perfiles de sensores realistas
+│   ├── incident_generator.py   # Generador de incidentes
+│   └── config.json
+│
+├── api/                        # PASO 3: API de Ingesta
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   ├── main.py                 # FastAPI app
+│   ├── models.py               # Modelos de datos
+│   ├── database.py             # Conexión PostgreSQL
+│   ├── validators.py           # Validación de datos
+│   └── retry_logic.py          # Lógica de reintentos
+│
+├── nodered/                    # PASO 2: Flujo de procesamiento
+│   ├── flows.json              # Configuración de flujos
+│   ├── settings.js
+│   └── package.json
+│
+├── postgres/                   # Base de datos
+│   ├── init.sql                # Schema inicial
+│   └── seed.sql                # Datos de prueba
+│
+├── monitoring/                 # Monitorización
+│   ├── grafana/
+│   │   └── dashboards/
+│   │       └── iot-pipeline.json
+│   └── prometheus.yml
+│
+└── tests/                      # Suite de tests
+    ├── test_simulator.py
+    ├── test_api.py
+    ├── test_resilience.py
+    └── test_e2e.py

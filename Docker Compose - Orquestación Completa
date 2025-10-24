@@ -1,0 +1,217 @@
+version: '3.9'
+
+services:
+  # ========================================
+  # MQTT BROKER - Eclipse Mosquitto
+  # ========================================
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: mqtt-broker
+    ports:
+      - "1883:1883"      # MQTT
+      - "9001:9001"      # WebSocket
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mosquitto_sub", "-t", "$$SYS/#", "-C", "1", "-i", "healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - iot-network
+
+  # ========================================
+  # POSTGRESQL - Base de Datos Principal
+  # ========================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-db
+    environment:
+      POSTGRES_DB: pharmacold
+      POSTGRES_USER: pharma_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-SecurePass123!}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./postgres/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pharma_user -d pharmacold"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iot-network
+
+  # ========================================
+  # REDIS - Cache y Cola de Mensajes
+  # ========================================
+  redis:
+    image: redis:7-alpine
+    container_name: redis-cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - iot-network
+
+  # ========================================
+  # API DE INGESTA - FastAPI
+  # ========================================
+  ingest-api:
+    build: ./api
+    container_name: ingest-api
+    environment:
+      DATABASE_URL: postgresql://pharma_user:${POSTGRES_PASSWORD:-SecurePass123!}@postgres:5432/pharmacold
+      REDIS_URL: redis://redis:6379/0
+      MQTT_BROKER: mosquitto
+      MQTT_PORT: 1883
+      LOG_LEVEL: INFO
+      MAX_RETRIES: 3
+      RETRY_DELAY: 5
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./api:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - iot-network
+
+  # ========================================
+  # NODE-RED - Procesamiento de Flujos
+  # ========================================
+  nodered:
+    image: nodered/node-red:latest
+    container_name: nodered
+    environment:
+      - TZ=Europe/Madrid
+    ports:
+      - "1880:1880"
+    volumes:
+      - nodered_data:/data
+      - ./nodered/flows.json:/data/flows.json
+      - ./nodered/settings.js:/data/settings.js
+    depends_on:
+      - mosquitto
+      - ingest-api
+    restart: unless-stopped
+    networks:
+      - iot-network
+
+  # ========================================
+  # SIMULADOR IoT - Dispositivos
+  # ========================================
+  simulator-truck-001:
+    build: ./simulator
+    container_name: simulator-truck-001
+    environment:
+      TRUCK_ID: TRK-001
+      MQTT_BROKER: mosquitto
+      MQTT_PORT: 1883
+      MQTT_TOPIC: pharmacold/trucks/telemetry
+      PUBLISH_INTERVAL: 2
+      CARGO_TYPE: vaccines
+      SIMULATE_INCIDENTS: "true"
+      INCIDENT_PROBABILITY: 0.05
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - iot-network
+
+  simulator-truck-002:
+    build: ./simulator
+    container_name: simulator-truck-002
+    environment:
+      TRUCK_ID: TRK-002
+      MQTT_BROKER: mosquitto
+      MQTT_PORT: 1883
+      MQTT_TOPIC: pharmacold/trucks/telemetry
+      PUBLISH_INTERVAL: 2
+      CARGO_TYPE: insulin
+      SIMULATE_INCIDENTS: "true"
+      INCIDENT_PROBABILITY: 0.03
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - iot-network
+
+  # ========================================
+  # GRAFANA - Dashboard de Monitorización
+  # ========================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-worldmap-panel
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - iot-network
+
+  # ========================================
+  # PROMETHEUS - Métricas
+  # ========================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    restart: unless-stopped
+    networks:
+      - iot-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  nodered_data:
+  grafana_data:
+  prometheus_data:
+
+networks:
+  iot-network:
+    driver: bridge
