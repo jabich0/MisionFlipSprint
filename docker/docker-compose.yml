@@ -2,6 +2,8 @@ services:
   postgres:
     image: postgres:15
     container_name: gd_postgres
+    env_file:
+      - .env
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -23,6 +25,8 @@ services:
   mosquitto:
     image: eclipse-mosquitto:2
     container_name: gd_mosquitto
+    env_file:
+      - .env
     ports:
       - "1883:1883"
     volumes:
@@ -31,6 +35,8 @@ services:
   nodered:
     image: nodered/node-red:latest
     container_name: gd_nodered
+    env_file:
+      - .env
     ports:
       - "1880:1880"
     volumes:
@@ -42,6 +48,8 @@ services:
     build:
       context: ../ingest_api
     container_name: gd_ingest_api
+    env_file:
+      - .env
     environment:
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
