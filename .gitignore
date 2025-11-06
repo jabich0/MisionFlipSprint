@@ -1,11 +1,20 @@
+# Archivos de entorno
+.env
+
+# Entornos virtuales
+venv/
+
+# Archivos temporales
 __pycache__/
 *.pyc
-.venv/
-venv/
-flows_*.json.backup
-docker/.env
+*.pyo
 *.log
+*.tmp
+
+# Configuración de IDE
+.vscode/
+.idea/
+
+# Archivos del sistema operativo
 .DS_Store
-*.zip
-dist/
-build/
+Thumbs.db
