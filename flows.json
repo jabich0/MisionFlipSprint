@@ -1,0 +1,197 @@
+[
+    {
+        "id": "fd0e45748bb70c10",
+        "type": "tab",
+        "label": "Flujo 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "76c1ce4434a8ebe7",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "test.mosquitto.org",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "2a03ecaa31aa4352",
+        "type": "mqtt in",
+        "z": "fd0e45748bb70c10",
+        "name": "",
+        "topic": "greendelivery/trackers/telemetry",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "76c1ce4434a8ebe7",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 370,
+        "y": 320,
+        "wires": [
+            [
+                "b9abbb0eda1cabef"
+            ]
+        ]
+    },
+    {
+        "id": "6cdcb01ad7e5eaf6",
+        "type": "debug",
+        "z": "fd0e45748bb70c10",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1280,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "3ff58e2ae1c85a48",
+        "type": "link in",
+        "z": "fd0e45748bb70c10",
+        "name": "link in 1",
+        "links": [],
+        "x": 1115,
+        "y": 320,
+        "wires": [
+            [
+                "6cdcb01ad7e5eaf6"
+            ]
+        ]
+    },
+    {
+        "id": "b9abbb0eda1cabef",
+        "type": "function",
+        "z": "fd0e45748bb70c10",
+        "name": "Validar JSON",
+        "func": "// --- CONSTANTES DE NEGOCIO (Cap. 3) ---\nconst MAX_CONSECUTIVE_EVENTS = 3; // ¡Este es nuestro valor N!\nconst MAX_TEMP = 8.0;\nconst MAX_G_FORCE = 2.5;\n\n// --- DATOS DE ENTRADA ---\nlet data = msg.payload;\n\n// --- LÓGICA DE VALIDACIÓN (Cap. 2 - igual que antes) ---\nif (!data.hasOwnProperty('temperatura') || \n    !data.hasOwnProperty('fuerza_g') || \n    !data.hasOwnProperty('id_paquete') ||\n    !data.hasOwnProperty('timestamp') ||\n    typeof data.temperatura !== 'number') {\n    \n    node.error(\"Error: JSON inválido o campos/tipos incorrectos\", msg);\n    return null; // Detiene el flujo\n}\n\n// --- LÓGICA DE MEMORIA (STATEFUL) (Cap. 3) ---\n\n// 1. Carga la \"memoria\" (el objeto con los contadores de cada paquete)\n//    Si no existe, crea un objeto vacío {}.\nlet packageState = flow.get(\"packageState\") || {};\n\nlet packageID = data.id_paquete;\nlet isAlert = false;\n\n// 2. Inicializa la memoria para este paquete si es la primera vez que lo vemos\nif (!packageState[packageID]) {\n    packageState[packageID] = {\n        consecutiveTempAlerts: 0,\n        consecutiveForceAlerts: 0\n    };\n    node.log(\"Nuevo paquete detectado: \" + packageID);\n}\n\n// 3. REGLA DE NEGOCIO: Comprueba si hay una condición de alerta\nif (data.temperatura > MAX_TEMP || data.fuerza_g > MAX_G_FORCE) {\n    // Si la temperatura es alta...\n    if (data.temperatura > MAX_TEMP) {\n        packageState[packageID].consecutiveTempAlerts++; // Incrementa el contador de temperatura\n    }\n    // Si la fuerza_g es alta...\n    if (data.fuerza_g > MAX_G_FORCE) {\n        packageState[packageID].consecutiveForceAlerts++; // Incrementa el contador de fuerza_g\n    }\n    \n    node.warn(`¡Pre-Alerta! Paquete ${packageID} con valores anómalos.`);\n\n} else {\n    // Si el dato es NORMAL, reseteamos los contadores a 0.\n    // Esto asegura que solo contamos eventos ANÓMALOS *CONSECUTIVOS*.\n    packageState[packageID].consecutiveTempAlerts = 0;\n    packageState[packageID].consecutiveForceAlerts = 0;\n}\n\n// 4. Guarda la memoria actualizada\nflow.set(\"packageState\", packageState);\n\n// 5. DECISIÓN: ¿Disparamos la alerta?\n// Comprobamos si alguno de los contadores ha alcanzado nuestro límite N (3)\nif (packageState[packageID].consecutiveTempAlerts >= MAX_CONSECUTIVE_EVENTS ||\n    packageState[packageID].consecutiveForceAlerts >= MAX_CONSECUTIVE_EVENTS) {\n    \n    isAlert = true;\n    \n    // (Opcional) Reseteamos el contador para que no envíe 100 alertas,\n    // sino solo una cuando se cumple la condición.\n    packageState[packageID].consecutiveTempAlerts = 0; \n    packageState[packageID].consecutiveForceAlerts = 0;\n}\n\n// --- SALIDA ---\n\n// Añadimos la nueva información al mensaje\nmsg.isAlert = isAlert; \nmsg.packageState = packageState[packageID]; // (Para depurar)\n\n// Dejamos pasar el mensaje (ya sea alerta o no) al siguiente nodo (la API)\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 680,
+        "y": 320,
+        "wires": [
+            [
+                "712587d2098b962a",
+                "3e403f470973441b"
+            ]
+        ]
+    },
+    {
+        "id": "712587d2098b962a",
+        "type": "http request",
+        "z": "fd0e45748bb70c10",
+        "name": "Llamar API Ingesta",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "http://ingest_api:8000/ingest",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 930,
+        "y": 320,
+        "wires": [
+            [
+                "6cdcb01ad7e5eaf6"
+            ]
+        ]
+    },
+    {
+        "id": "5e14ae9f332f5f5d",
+        "type": "catch",
+        "z": "fd0e45748bb70c10",
+        "name": "",
+        "scope": [
+            "712587d2098b962a"
+        ],
+        "uncaught": false,
+        "x": 600,
+        "y": 220,
+        "wires": [
+            [
+                "96b4e3e55a900907"
+            ]
+        ]
+    },
+    {
+        "id": "96b4e3e55a900907",
+        "type": "delay",
+        "z": "fd0e45748bb70c10",
+        "name": "Esperar  5 seg",
+        "pauseType": "delay",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 940,
+        "y": 220,
+        "wires": [
+            [
+                "712587d2098b962a"
+            ]
+        ]
+    },
+    {
+        "id": "3e403f470973441b",
+        "type": "debug",
+        "z": "fd0e45748bb70c10",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 400,
+        "y": 220,
+        "wires": []
+    }
+]

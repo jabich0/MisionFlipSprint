@@ -1,0 +1,5 @@
+Paso 2: La Ciencia de la Medición (Eligiendo la Métrica Correcta)
+
+Tras analizar las dos opciones que nos dan, hemos elegido la opción A (falso positivo) ya que envía una alerta cuando no ocurre nada y se pierde tiempo de un trabajador al tener que revisar el envío. La opción B no envía una alerta cuando algo le ha ocurrido al envío como estropearse por exceso de temperatura por ejemplo y es lo peor que le puede pasar a GreenDelivery. Por eso, tras analizar las dos opciones, elegimos la opción A porque preferimos perder tiempo que miles de euros y la confianza del cliente que es lo más importante. 
+
+En la métrica a utilizar nos hemos decidido por optimizar la exhaustividad (recall) que mide la cantidad de incidentes que eres capaz de “atrapar” porque queremos minimizar los falsos negativos (no se envía alerta cuando un envío se estropea). Preferimos que nuestro sistema sea muy sensible y que pueda generar alguna falsa alarma si eso garantiza que vamos a capturar el 100% de los problemas reales.
